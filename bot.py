@@ -31,42 +31,29 @@ REFERERS = [
 # APNE MULTIPLE TARGET LINKS YAHAN DAALEIN
 # ==========================================
 TARGET_URLS = [
-"https://ouo.io/4ZY8rI",
-"https://ouo.io/dnyXUc",
-"https://ouo.io/7Eqku9w",
-"https://ouo.io/CeqFDN",
-"https://ouo.io/UPO9gI",
-"https://ouo.io/SWlJvg",
-"https://ouo.io/SWlJvg",
-"https://ouo.io/SWlJvg",
-"https://ouo.io/UPO9gI",
-"https://ouo.io/PrFNQFS"
+    "https://ouo.io/4ZY8rI",
+    "https://ouo.io/dnyXUc",
+    "https://ouo.io/7Eqku9w",
+    "https://ouo.io/CeqFDN",
+    "https://ouo.io/UPO9gI",
+    "https://ouo.io/SWlJvg",
+    "https://ouo.io/PrFNQFS"
 ]
 
 def fetch_and_filter_free_proxies():
-    print("[+] 15 mukhtalif reliable sources se fresh free proxies fetch ki ja rahi hain...")
+    print("[+] 3 reliable sources se fresh free proxies fetch ki ja rahi hain...")
+    # Sirf top aur sab se stable 3-4 sources rakhe hain taake load na pare
     sources = [
         "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=5000&country=all&ssl=all&anonymity=elite",
         "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
         "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks4.txt",
-        "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/socks5.txt",
-        "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt",
-        "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
-        "https://raw.githubusercontent.com/ErcinArslan/Proxy-List/main/proxies/http.txt",
-        "https://raw.githubusercontent.com/roosterkid/proxy-list/main/The_Proxies.txt",
-        "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
-        "https://raw.githubusercontent.com/HyperBeats/proxy-list/main/http.txt",
-        "https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt",
-        "https://raw.githubusercontent.com/Visualized/Proxy-List/main/http.txt",
-        "https://raw.githubusercontent.com/sunny9577/proxy-list/master/proxies.txt",
-        "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt"
+        "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt"
     ]
     
     all_proxies = set()
     for url in sources:
         try:
-            response = requests.get(url, timeout=6)
+            response = requests.get(url, timeout=5)
             if response.status_code == 200:
                 for line in response.text.splitlines():
                     proxy = line.strip()
@@ -87,21 +74,22 @@ def fetch_and_filter_free_proxies():
                 "http": f"http://{proxy}",
                 "https": f"http://{proxy}"
             }
-            res = requests.get(test_url, proxies=proxies, timeout=4)
+            res = requests.get(test_url, proxies=proxies, timeout=3)
             if res.status_code == 200:
                 return proxy
         except:
             pass
         return None
 
-    with ThreadPoolExecutor(max_workers=50) as executor:
-        futures = {executor.submit(test_proxy, p): p for p in raw_list[:400]}
+    # Workers ko kam kar ke 20 kar diya hai taake server par load na pare
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(test_proxy, p): p for p in raw_list[:200]}
         for future in as_completed(futures):
             res = future.result()
             if res:
                 working_proxies.append(res)
                 print(f"[✓] Working Proxy Mili: {res}")
-                if len(working_proxies) >= 60:
+                if len(working_proxies) >= 30:
                     break
 
     print(f"[+] Filtering mukammal! Kul {len(working_proxies)} zinda aur fast proxies tayyar hain.")
@@ -128,7 +116,6 @@ async def worker(worker_id, queue, browser, wait_time, proxy_list):
             "timezone_id": "America/New_York"
         }
 
-        # Sirf free tested proxies mein se random select hoga
         if proxy_list:
             chosen_proxy = random.choice(proxy_list)
             context_args["proxy"] = {"server": f"http://{chosen_proxy}"}
@@ -170,7 +157,7 @@ async def worker(worker_id, queue, browser, wait_time, proxy_list):
                         await human_btn.click()
                         await asyncio.sleep(random.uniform(2, 4))
                 except Exception:
-                    print(f"    [-] 'I'M A HUMAN' button nahi mila ya pehle se guzar gaya.")
+                    print(f"    [-] 'I'M A HUMAN' button nahi mila.")
 
                 try:
                     print(f"    [⌛] 'GET LINK' button ke liye wait kiya ja raha hai...")
@@ -208,11 +195,11 @@ async def worker(worker_id, queue, browser, wait_time, proxy_list):
 
 async def main():
     print("==========================================")
-    print("  PLAYWRIGHT 50-WORKERS FREE PROXY BOT   ")
+    print("  PLAYWRIGHT 20-WORKERS OPTIMIZED BOT    ")
     print("==========================================")
 
-    total_tasks = int(os.getenv("TOTAL_TASKS", "50"))
-    concurrent_workers = int(os.getenv("CONCURRENT_WORKERS", "50"))
+    total_tasks = int(os.getenv("TOTAL_TASKS", "20"))
+    concurrent_workers = int(os.getenv("CONCURRENT_WORKERS", "20"))
     wait_time = int(os.getenv("WAIT_TIME", "5"))
 
     async with async_playwright() as p:
@@ -234,7 +221,6 @@ async def main():
                 print(f"      BATCH #{batch_number} START HO RAHA HAI")
                 print(f"==========================================")
 
-                # Direct har batch ke shuru mein fresh free proxies fetch aur test hongi
                 proxy_list = fetch_and_filter_free_proxies()
                 if not proxy_list:
                     print("[!] Koi bhi live proxy nahi mili, bina proxy ke chalaya ja raha hai.")
